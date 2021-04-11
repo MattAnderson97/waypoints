@@ -117,13 +117,19 @@ public class WaypointData
         return list;
     }
 
-    public void setCompassTarget(String name)
+    public void setCompassTarget(Waypoint waypoint)
     {
-        getWaypoint(name).ifPresent(waypoint -> {
-            if(player.isOnline())
-            {
-                Objects.requireNonNull(player.getPlayer()).setCompassTarget(waypoint.getLocation());
-            }
-        });
+        if(player.isOnline())
+        {
+            Objects.requireNonNull(player.getPlayer()).setCompassTarget(waypoint.getLocation());
+        }
+    }
+
+    public void resetCompass()
+    {
+        if(player.isOnline())
+        {
+            Objects.requireNonNull(player.getPlayer()).setCompassTarget(Bukkit.getWorlds().get(0).getSpawnLocation());
+        }
     }
 }

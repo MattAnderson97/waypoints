@@ -40,6 +40,10 @@ public class WaypointsCommand
         return target;
     }
 
+    //
+    // private methods
+    //
+
     private WaypointData getData(OfflinePlayer target, Player sender)
     {
         Optional<WaypointData> dataOptional = waypoints.getWaypointData(target);
@@ -64,7 +68,7 @@ public class WaypointsCommand
         return color + String.valueOf(dist);
     }
 
-    private void sendHeader(Player sender)
+    private void sendHeader(Player sender, String sectionTitle)
     {
         TextChain.chain()
             .then("Waypoints")
@@ -73,6 +77,10 @@ public class WaypointsCommand
                 .color(NamedTextColor.DARK_AQUA)
             .then(">")
                 .color(NamedTextColor.AQUA)
+            .then(sectionTitle)
+                .color(NamedTextColor.WHITE)
+                .bold()
+                .italic()
             .send(waypoints.adventure(sender));
     }
 
@@ -86,7 +94,11 @@ public class WaypointsCommand
             .send(waypoints.adventure(sender));
     }
 
-    @ProxiedBy("wpls")
+    //
+    // command methods
+    //
+
+    @ProxiedBy(value = "wpls", hidden = true)
     @CommandMethod("waypoints list")
     @CommandDescription("Get a list of waypoints")
     public void list(
@@ -98,11 +110,9 @@ public class WaypointsCommand
         target = checkTarget(sender, target);
         // get data
         WaypointData data = getData(target, sender);
-        if (data == null)
-        {
-            return;
-        }
-        sendHeader(sender);
+        if (data == null) { return; }
+
+        sendHeader(sender, "");
         // get list
         List<Waypoint> waypointsList;
         if (sort == null) { sort = ""; }
@@ -179,7 +189,7 @@ public class WaypointsCommand
         ));
     }
 
-    @ProxiedBy("wpset")
+    @ProxiedBy(value = "wpset", hidden = true)
     @CommandMethod("waypoints set <name>")
     @CommandDescription("Create or Update a waypoint")
     public void set(
@@ -191,54 +201,34 @@ public class WaypointsCommand
         target = checkTarget(sender, target);
         // get data
         WaypointData data = getData(target, sender);
-        if (data == null)
+        if (data == null) { return; }
+
+        Location loc = sender.getLocation();
+        TextChain messageChain = TextChain.chain();
+
+        if (data.getWaypoint(name).isPresent())
         {
-            return;
-        }
-        // check if waypoint already exists
-        Optional<Waypoint> wpOptional = data.getWaypoint(name);
-        if (wpOptional.isPresent())
-        {
-            data.updateWaypoint(name, sender.getLocation());
-            data.getWaypoint(name).ifPresent(wp -> {
-                Location loc = wp.getLocation();
-                TextChain.chain()
-                    .then("Updated waypoint ")
-                        .color(NamedTextColor.WHITE)
-                    .then(wp.getName())
-                        .color(NamedTextColor.AQUA)
-                        .tooltip(
-                            "Location: " + ChatColor.AQUA
-                                + (int) loc.getX() + " "
-                                + (int) loc.getY() + " "
-                                + (int) loc.getZ()
-                        )
-                    .send(waypoints.adventure(sender));
-            });
+            data.updateWaypoint(name, loc);
+            messageChain.then("Updated waypoint ");
         }
         else
         {
-            data.createWaypoint(name, sender.getLocation());
-            data.getWaypoint(name).ifPresent(wp -> {
-                Location loc = wp.getLocation();
-                TextChain.chain()
-                    .then("Created waypoint ")
-                        .color(NamedTextColor.WHITE)
-                    .then(wp.getName())
-                        .color(NamedTextColor.AQUA)
-                        .tooltip(
-                            "Location: " + ChatColor.AQUA
-                                + (int) loc.getX() + " "
-                                + (int) loc.getY() + " "
-                                + (int) loc.getZ()
-                        )
-                    .send(waypoints.adventure(sender));
-            });
+            data.createWaypoint(name, loc);
+            messageChain.then("Created waypoint ");
         }
+        messageChain.then(name)
+            .color(NamedTextColor.AQUA)
+            .tooltip(
+                "Location: " + ChatColor.AQUA
+                    + (int) loc.getX() + " "
+                    + (int) loc.getY() + " "
+                    + (int) loc.getZ()
+            )
+            .send(waypoints.adventure(sender));
         waypoints.updateWaypointData(target, data);
     }
 
-    @ProxiedBy("wpdel")
+    @ProxiedBy(value = "wpdel", hidden = true)
     @CommandMethod("waypoints delete <name>")
     @CommandDescription("Delete a waypoint")
     public void delete(
@@ -250,18 +240,17 @@ public class WaypointsCommand
         target = checkTarget(sender, target);
         // get data
         WaypointData data = getData(target, sender);
-        if (data == null)
-        {
-            return;
-        }
+        if (data == null) { return; }
+
         if (data.deleteWaypoint(name))
         {
             TextChain.chain()
-                .then("Deleted waypoint")
+                .then("Deleted waypoint ")
                     .color(NamedTextColor.WHITE)
                 .then(name)
                     .color(NamedTextColor.AQUA)
                 .send(waypoints.adventure(sender));
+            waypoints.updateWaypointData(target, data);
         }
         else
         {
@@ -269,7 +258,7 @@ public class WaypointsCommand
         }
     }
 
-    @ProxiedBy("wpinfo")
+    @ProxiedBy(value = "wpinfo", hidden = true)
     @CommandMethod("waypoints info <name>")
     @CommandDescription("Get info for a waypoint")
     public void info(
@@ -281,15 +270,10 @@ public class WaypointsCommand
         target = checkTarget(sender, target);
         // get data
         WaypointData data = getData(target, sender);
-        if (data == null)
-        {
-            return;
-        }
+        if (data == null) { return; }
         // get waypoint from data
-        Optional<Waypoint> wpOptional = data.getWaypoint(name);
-        if (wpOptional.isPresent()){
-            Waypoint wp = wpOptional.get();
-            sendHeader(sender);
+        data.getWaypoint(name).ifPresentOrElse(wp -> {
+            sendHeader(sender, "Info");
             Location loc = wp.getLocation();
             TextChain chain = TextChain.chain()
                 .then(" name: ")
@@ -319,39 +303,46 @@ public class WaypointsCommand
                     .then(getRoundedDistanceString(sender, wp));
             }
             chain.send(waypoints.adventure(sender));
-        }
-        else
-        {
-            notFound(name, sender);
-        }
+        }, () -> notFound(name, sender));
     }
 
-    @ProxiedBy("wpcopy")
-    @CommandMethod("waypoints copy <name>")
+    @ProxiedBy(value = "wpcopy", hidden = true)
+    @CommandMethod("waypoints copy <name> <new-name>")
     @CommandDescription("copy a waypoint")
     public void copy(
         final @NonNull Player sender,
         final @NonNull @Argument("name") String name,
+        final @NonNull @Argument("new-name") String newWp,
         @Flag(value="player", aliases={"p"}) OfflinePlayer target
     )
     {
         target = checkTarget(sender, target);
+        WaypointData data = getData(target, sender);
+        WaypointData senderData = getData(sender, sender);
+        if (data == null) { return; }
+        if (senderData == null) { return; }
+
+        data.getWaypoint(name).ifPresentOrElse(wp -> {
+            senderData.createWaypoint(newWp, wp.getLocation());
+            Location loc = wp.getLocation();
+            TextChain.chain()
+                .then("Copied waypoint ")
+                .then(name)
+                .then(" to ")
+                .then(newWp)
+                    .color(NamedTextColor.AQUA)
+                    .tooltip(
+                        "Location: " + ChatColor.AQUA
+                            + (int) loc.getX() + " "
+                            + (int) loc.getY() + " "
+                            + (int) loc.getZ()
+                    )
+                .send(waypoints.adventure(sender));
+        }, () -> notFound(name, sender));
+        waypoints.updateWaypointData(target, data);
     }
 
-    @ProxiedBy("wpshare")
-    @CommandMethod("waypoints share <name> <target>")
-    @CommandDescription("share a waypoint")
-    public void share(
-        final @NonNull Player sender,
-        final @NonNull @Argument("name") String name,
-        final @NonNull @Argument("target") Player target,
-        @Flag(value="player", aliases={"p"}) OfflinePlayer owner
-    )
-    {
-        owner = checkTarget(sender, owner);
-    }
-
-    @ProxiedBy("wpteleport")
+    @ProxiedBy(value = "wptp", hidden = true)
     @CommandMethod("waypoints teleport <name>")
     @CommandDescription("teleport a waypoint")
     @CommandPermission("waypoints.teleport")
@@ -362,9 +353,58 @@ public class WaypointsCommand
     )
     {
         target = checkTarget(sender, target);
+        WaypointData data = getData(target, sender);
+        if (data == null) { return; }
+        data.getWaypoint(name).ifPresentOrElse(wp -> sender.teleport(wp.getLocation()), () -> notFound(name, sender));
     }
 
-    @ProxiedBy("wphelp")
+    @ProxiedBy(value = "setcompass", hidden = true)
+    @CommandMethod("waypoints setcompass <name>")
+    @CommandDescription("Set your compass to point to a waypoint")
+    public void setCompass(
+        final @NonNull Player sender,
+        final @NonNull @Argument("name") String name,
+        @Flag(value="player", aliases={"p"}) OfflinePlayer target
+    )
+    {
+        target = checkTarget(sender, target);
+        WaypointData data = getData(target, sender);
+        if (data == null) { return; }
+        WaypointData senderData = getData(sender, sender);
+        if (senderData == null) { return; }
+        data.getWaypoint(name).ifPresentOrElse(wp -> {
+            senderData.setCompassTarget(wp);
+            Location loc = wp.getLocation();
+            TextChain.chain()
+                .then("Set compass target to ")
+                .then(wp.getName())
+                    .color(NamedTextColor.AQUA)
+                    .tooltip(
+                        "Location: " + ChatColor.AQUA
+                            + (int) loc.getX() + " "
+                            + (int) loc.getY() + " "
+                            + (int) loc.getZ()
+                    )
+                .send(waypoints.adventure(sender));
+        }, () -> notFound(name, sender));
+    }
+
+    @ProxiedBy(value = "resetcompass", hidden = true)
+    @CommandMethod("waypoints resetcompass")
+    @CommandDescription("Reset your compass target")
+    public void resetCompass(
+        final @NonNull Player sender,
+        @Flag(value="player", aliases={"p"}) OfflinePlayer target
+    )
+    {
+        target = checkTarget(sender, target);
+        WaypointData data = getData(target, sender);
+        if (data == null) { return; }
+        data.resetCompass();
+        TextChain.chain().then("Reset compass target").send(waypoints.adventure(sender));
+    }
+
+    @ProxiedBy(value = "wphelp", hidden = true)
     @CommandMethod("waypoints help [query]")
     @CommandDescription("waypoints help page")
     public void help(final @NonNull Player sender, final @Argument("query") @Greedy String query)

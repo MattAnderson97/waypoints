@@ -1,10 +1,11 @@
 package space.wolv.waypoints;
 
+import cloud.commandframework.Command;
 import cloud.commandframework.annotations.AnnotationParser;
 import cloud.commandframework.CommandManager;
 import cloud.commandframework.arguments.parser.ParserParameters;
 import cloud.commandframework.arguments.parser.StandardParameters;
-import cloud.commandframework.execution.AsynchronousCommandExecutionCoordinator;
+import cloud.commandframework.execution.CommandExecutionCoordinator;
 import cloud.commandframework.meta.CommandMeta;
 import cloud.commandframework.minecraft.extras.MinecraftHelp;
 import cloud.commandframework.paper.PaperCommandManager;
@@ -27,7 +28,6 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.function.Function;
 
-@SuppressWarnings("unused")
 public class Waypoints extends JavaPlugin implements Listener
 {
     private CommandManager<CommandSender> commandManager;
@@ -47,11 +47,11 @@ public class Waypoints extends JavaPlugin implements Listener
         // get command manager instance
         try
         {
-            this.commandManager = new PaperCommandManager<CommandSender>(
-                this,
-                AsynchronousCommandExecutionCoordinator.<CommandSender>newBuilder().build(), // parse/execute commands async
-                Function.identity(), // bukkit command sender
-                Function.identity() // command sender again
+            this.commandManager = new PaperCommandManager<>(
+                    this,
+                    CommandExecutionCoordinator.simpleCoordinator(), // command parser
+                    Function.identity(), // bukkit command sender
+                    Function.identity() // command sender again
             );
         }
         catch (Exception e)
@@ -69,12 +69,15 @@ public class Waypoints extends JavaPlugin implements Listener
             /* Manager */ this.commandManager
         );
 
+        this.minecraftHelp.commandFilter(command -> !command.isHidden());
+
         // Create the annotation parser. This allows you to define commands using methods annotated with
         // @CommandMethod
         final Function<ParserParameters, CommandMeta> commandMetaFunction = p ->
             CommandMeta.simple()
                 // This will allow you to decorate commands with descriptions
                 .with(CommandMeta.DESCRIPTION, p.get(StandardParameters.DESCRIPTION, "No description"))
+                .with(CommandMeta.HIDDEN, p.get(StandardParameters.HIDDEN, false))
                 .build();
         /* Manager */
         /* Command sender type */
@@ -149,6 +152,7 @@ public class Waypoints extends JavaPlugin implements Listener
      * event handling
      */
 
+    @SuppressWarnings("unused")
     @EventHandler
     public void onJoin(PlayerJoinEvent event)
     {
@@ -157,6 +161,7 @@ public class Waypoints extends JavaPlugin implements Listener
         playerWaypointMap.put(UUID, new WaypointData(player, playerDataFolder));
     }
 
+    @SuppressWarnings("unused")
     @EventHandler
     public void onQuit(PlayerQuitEvent event)
     {
