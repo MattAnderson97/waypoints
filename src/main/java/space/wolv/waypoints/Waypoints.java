@@ -1,6 +1,5 @@
 package space.wolv.waypoints;
 
-import cloud.commandframework.Command;
 import cloud.commandframework.annotations.AnnotationParser;
 import cloud.commandframework.CommandManager;
 import cloud.commandframework.arguments.parser.ParserParameters;
@@ -22,8 +21,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import space.wolv.waypoints.listeners.PlayerDeathListener;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.function.Function;
@@ -35,6 +36,7 @@ public class Waypoints extends JavaPlugin implements Listener
     public MinecraftHelp<CommandSender> minecraftHelp;
 
     private HashMap<String, WaypointData> playerWaypointMap;
+    private ArrayList<String> recentlyDied;
     private String playerDataFolder;
 
     /*
@@ -48,17 +50,16 @@ public class Waypoints extends JavaPlugin implements Listener
         try
         {
             this.commandManager = new PaperCommandManager<>(
-                    this,
-                    CommandExecutionCoordinator.simpleCoordinator(), // command parser
-                    Function.identity(), // bukkit command sender
-                    Function.identity() // command sender again
+                this,
+                CommandExecutionCoordinator.simpleCoordinator(), // command parser
+                Function.identity(), // bukkit command sender
+                Function.identity() // command sender again
             );
         }
         catch (Exception e)
         {
             e.printStackTrace();
         }
-
 
         // create a bukkit audience for adventure
         audiences = BukkitAudiences.create(this);
@@ -83,9 +84,9 @@ public class Waypoints extends JavaPlugin implements Listener
         /* Command sender type */
         /* Mapper for command meta instances */
         AnnotationParser<CommandSender> annotationParser = new AnnotationParser<>(
-                /* Manager */ this.commandManager,
-                /* Command sender type */ CommandSender.class,
-                /* Mapper for command meta instances */ commandMetaFunction
+            /* Manager */ this.commandManager,
+            /* Command sender type */ CommandSender.class,
+            /* Mapper for command meta instances */ commandMetaFunction
         );
 
         //
@@ -93,10 +94,12 @@ public class Waypoints extends JavaPlugin implements Listener
         //
 
         this.playerWaypointMap = new HashMap<>();
+        this.recentlyDied = new ArrayList<>();
         this.playerDataFolder = getDataFolder() + File.separator + "player data";
 
         // register event listeners
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
 
         // register commands
         annotationParser.parse(new WaypointsCommand(this));
@@ -114,6 +117,7 @@ public class Waypoints extends JavaPlugin implements Listener
     @Override
     public void onDisable()
     {
+        recentlyDied.clear();
         playerWaypointMap.forEach((uuid, data) -> data.saveAllWaypoints());
         playerWaypointMap.clear();
     }
@@ -143,9 +147,19 @@ public class Waypoints extends JavaPlugin implements Listener
         return Optional.empty();
     }
 
-    public void updateWaypointData(OfflinePlayer player, WaypointData data)
+    public void addRecentlyDied(Player player)
     {
-        playerWaypointMap.put(player.getUniqueId().toString(), data);
+        recentlyDied.add(player.getUniqueId().toString());
+    }
+
+    public boolean checkRecentlyDied(Player player)
+    {
+        return recentlyDied.contains(player.getUniqueId().toString());
+    }
+
+    public void removeRecentlyDied(Player player)
+    {
+        recentlyDied.remove(player.getUniqueId().toString());
     }
 
     /*
@@ -165,7 +179,9 @@ public class Waypoints extends JavaPlugin implements Listener
     @EventHandler
     public void onQuit(PlayerQuitEvent event)
     {
-        String UUID = event.getPlayer().getUniqueId().toString();
+        Player player = event.getPlayer();
+        String UUID = player.getUniqueId().toString();
+        removeRecentlyDied(player);
         playerWaypointMap.get(UUID).saveAllWaypoints();
         playerWaypointMap.remove(UUID);
     }

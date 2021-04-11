@@ -1,6 +1,9 @@
 package space.wolv.waypoints;
 
 import community.leaf.textchain.adventure.TextChain;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,5 +40,14 @@ public class Utils
         }
 
         return pages;
+    }
+
+    public static void sendSeparator(Audience audience)
+    {
+        TextChain.chain()
+            .then("-----------------------------------------------")
+                .color(NamedTextColor.AQUA)
+                .strikethrough()
+            .send(audience);
     }
 }

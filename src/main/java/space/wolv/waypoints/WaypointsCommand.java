@@ -75,11 +75,10 @@ public class WaypointsCommand
                 .color(NamedTextColor.WHITE)
             .then(" >")
                 .color(NamedTextColor.DARK_AQUA)
-            .then(">")
+            .then("> ")
                 .color(NamedTextColor.AQUA)
             .then(sectionTitle)
                 .color(NamedTextColor.WHITE)
-                .bold()
                 .italic()
             .send(waypoints.adventure(sender));
     }
@@ -225,7 +224,6 @@ public class WaypointsCommand
                     + (int) loc.getZ()
             )
             .send(waypoints.adventure(sender));
-        waypoints.updateWaypointData(target, data);
     }
 
     @ProxiedBy(value = "wpdel", hidden = true)
@@ -250,7 +248,6 @@ public class WaypointsCommand
                 .then(name)
                     .color(NamedTextColor.AQUA)
                 .send(waypoints.adventure(sender));
-            waypoints.updateWaypointData(target, data);
         }
         else
         {
@@ -339,7 +336,6 @@ public class WaypointsCommand
                     )
                 .send(waypoints.adventure(sender));
         }, () -> notFound(name, sender));
-        waypoints.updateWaypointData(target, data);
     }
 
     @ProxiedBy(value = "wptp", hidden = true)

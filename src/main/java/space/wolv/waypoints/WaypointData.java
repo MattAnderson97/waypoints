@@ -56,7 +56,9 @@ public class WaypointData
 
     public void createWaypoint(String name, Location loc)
     {
-        waypoints.add(new Waypoint(name, loc));
+        getWaypoint(name).ifPresentOrElse(
+            ignored -> updateWaypoint(name, loc), () -> waypoints.add(new Waypoint(name, loc))
+        );
     }
 
     public boolean deleteWaypoint(String name)
@@ -123,6 +125,11 @@ public class WaypointData
         {
             Objects.requireNonNull(player.getPlayer()).setCompassTarget(waypoint.getLocation());
         }
+    }
+
+    public void setCompassTarget(String name)
+    {
+        getWaypoint(name).ifPresent(this::setCompassTarget);
     }
 
     public void resetCompass()
