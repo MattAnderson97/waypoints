@@ -1,6 +1,11 @@
 package space.wolv.waypoints;
 
-import cloud.commandframework.annotations.*;
+import cloud.commandframework.annotations.Argument;
+import cloud.commandframework.annotations.CommandDescription;
+import cloud.commandframework.annotations.CommandMethod;
+import cloud.commandframework.annotations.CommandPermission;
+import cloud.commandframework.annotations.Flag;
+import cloud.commandframework.annotations.ProxiedBy;
 import cloud.commandframework.annotations.specifier.Greedy;
 import community.leaf.textchain.adventure.TextChain;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -337,10 +342,10 @@ public class WaypointsCommand
     @CommandMethod("waypoints share <name> <target>")
     @CommandDescription("share a waypoint")
     public void share(
-            final @NonNull Player sender,
-            final @NonNull @Argument("name") String name,
-            final @NonNull @Argument("target") Player target,
-            @Flag(value="player", aliases={"p"}) OfflinePlayer owner
+        final @NonNull Player sender,
+        final @NonNull @Argument("name") String name,
+        final @NonNull @Argument("target") Player target,
+        @Flag(value="player", aliases={"p"}) OfflinePlayer owner
     )
     {
         owner = checkTarget(sender, owner);
