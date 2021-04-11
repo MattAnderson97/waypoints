@@ -1,0 +1,5 @@
+name: Waypoints
+main: space.wolv.waypoints.Waypoints
+author: Wolveh
+version: 0.0.1
+api-version: 1.16
