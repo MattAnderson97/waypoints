@@ -57,7 +57,7 @@ public class WaypointsCommand
         return dataOptional.get();
     }
 
-    private String getRoundedDistance(Player sender, Waypoint wp)
+    private String getRoundedDistanceString(Player sender, Waypoint wp)
     {
         double dist = Math.round(wp.distance(sender.getLocation()) * 100.0) / 100.0;
         ChatColor color = dist <= 100 ? ChatColor.GREEN : (dist <= 250 ? ChatColor.YELLOW : (dist <= 500 ? ChatColor.GOLD : ChatColor.RED));
@@ -130,7 +130,7 @@ public class WaypointsCommand
             Location loc = wp.getLocation();
             if (Objects.equals(loc.getWorld(), sender.getWorld()))
             {
-                String dist = getRoundedDistance(sender, wp);
+                String dist = getRoundedDistanceString(sender, wp);
                 // lines.add(" " + ChatColor.GRAY + wp.getName() +  ChatColor.WHITE + " (" + dist + ChatColor.WHITE + ")");
                 lines.add(
                     TextChain.chain()
@@ -316,7 +316,7 @@ public class WaypointsCommand
                 chain.nextLine()
                     .then(" distance: ")
                         .color(NamedTextColor.WHITE)
-                    .then(getRoundedDistance(sender, wp));
+                    .then(getRoundedDistanceString(sender, wp));
             }
             chain.send(waypoints.adventure(sender));
         }
